@@ -1,73 +1,47 @@
 # Transfers Network Dynamics
 
-Analisi della **rete dei trasferimenti calcistici** come sistema complesso.
-Progetto per il corso *Data Driven Modeling of Complex Systems*.
+Progetto per il corso di Data Driven Modeling of Complex Systems. Ho modellato il mercato dei trasferimenti calcistici come una rete e ho provato a rispondere a una domanda precisa.
 
-## Domanda di ricerca
+## La domanda di ricerca
 
-> La **posizione strutturale** di un club nella rete dei trasferimenti predice la sua capacità di
-> **estrarre valore economico**, oltre e al di là della sua **spesa**?
+Alcuni club generano valore dal mercato senza essere ricchi: comprano giovani, li fanno crescere, li rivendono. Altri spendono e basta. Volevo capire se questa capacità dipende da quanto un club spende oppure da dove si trova nella rete degli scambi.
 
-È una *corsa di cavalli* tra due spiegazioni rivali dello stesso esito: un attributo individuale
-del nodo (la spesa) contro una misura di rete (la centralità). La rete "si guadagna il posto"
-solo se la posizione spiega ciò che la spesa da sola non spiega.
+Detto in modo più tecnico: la posizione di un club nella rete predice il valore che estrae, oltre a quello che già si spiega con la spesa? È un confronto tra due variabili rivali — un attributo del club (la spesa) contro una misura di rete (la centralità). La rete "serve" solo se la posizione aggiunge qualcosa che la spesa da sola non cattura.
 
-## Il risultato in una figura
+## Cosa è venuto fuori
 
 ![Mappa dei ruoli](mappa_ruoli.png)
 
-Il mercato si organizza lungo due assi — **posizione** (betweenness) e **direzione del flusso**
-(sorgente-pozzo) — che identificano ruoli strutturali distinti:
+La posizione conta davvero: nel modello con lag temporale (posizione nell'anno t, esito nell'anno t+1) la centralità resta significativa, e quando la aggiungo il peso della spesa si dimezza. Quindi parte di quello che sembrava "effetto dei soldi" era in realtà posizione.
 
-- **Broker-produttori** (alto-destra): centrali *e* venditori netti — Porto, Benfica, Ajax, Atalanta.
-- **Accumulatori centrali** (basso-destra): comprano e assorbono talento — Real, Barça, City, Chelsea.
-- **Produttore puro** (alto-sinistra): periferico ma venditore netto — Athletic Bilbao, un caso raro.
+Però l'effetto è concentrato sui grandi estrattori: la posizione predice più *quanto* estrai che *se* estrai. L'ho verificato con quattro versioni diverse dell'esito, e il segnale si comporta in modo coerente.
 
-## I risultati in breve
+La cosa più interessante è che esistono due modi di estrarre valore. C'è chi lo fa intermediando (i broker, club centrali) e chi lo fa producendo talento e vendendolo direttamente (club periferici, che risultano più efficienti per euro speso). La betweenness vede bene i primi ed è cieca ai secondi — ed è proprio questa cecità che mi ha fatto scoprire la seconda via.
 
-- La **posizione predice l'estrazione di valore oltre la spesa**: nel modello con lag temporale
-  (posizione in *t* → esito in *t+1*), la betweenness resta significativa, e il potere predittivo
-  della spesa si dimezza quando la posizione entra nel modello.
-- L'effetto è **concentrato sui grandi estrattori**: la posizione predice più la *magnitudine*
-  dell'estrazione che il semplice fatto di estrarre (robusto su quattro specificazioni dell'esito).
-- Esistono **due vie all'estrazione di valore**: l'*intermediazione* dei broker centrali e la
-  *produzione diretta* dei club periferici (più efficienti: estraggono più valore per euro speso).
-  La betweenness cattura la prima; la sua cecità alla seconda ne rivela l'esistenza.
+Nella mappa qui sopra i due assi sono la posizione (betweenness) e la direzione del flusso (vendo netto / compro netto). I broker-produttori come Porto e Benfica stanno in alto a destra, gli accumulatori come Real e City in basso a destra, e l'Athletic Bilbao — produttore puro ma periferico — quasi da solo in alto a sinistra.
 
 ## Dati
 
-- **Fonte:** [d2ski/football-transfers-data](https://github.com/d2ski/football-transfers-data)
-  — 7 leghe top europee, stagioni 2009–2021. I dati grezzi **non** sono inclusi: si scaricano dalla fonte.
-- **Snapshot di riferimento:** luglio 2025 (il dataset a monte è fermo al 2021).
+Fonte: [d2ski/football-transfers-data](https://github.com/d2ski/football-transfers-data), 7 leghe top europee, stagioni 2009–2021. I dati grezzi non sono qui dentro, si scaricano dal repo originale. Snapshot usato: luglio 2025 (il dataset a monte è comunque fermo al 2021).
 
-## Scelte metodologiche chiave
+## Scelte fatte che vanno spiegate
 
-- **Esito Y** — margine sul valore di mercato: `(prezzo di vendita − valore di mercato)` sommato
-  per club-stagione. Scelto perché il costo d'acquisto è censurato per ~2/3 del valore venduto
-  (acquisti antecedenti alla finestra): usarlo fabbricherebbe profitto dal nulla.
-- **Doppia frontiera della rete** — le grandezze di nodo (Y, spesa) si calcolano su tutte le
-  transazioni dei club *core* (militanti nelle 7 leghe coperte); il grafo si costruisce solo sugli
-  archi *core-to-core*, per non contaminare le misure di centralità.
-- **Betweenness topologica** (non pesata sui valori) per evitare tautologia con l'esito economico.
-- **Lag temporale** per rompere la causalità inversa; controlli per volume di transazioni;
-  **errori standard clusterizzati** per club (osservazioni non indipendenti).
-- **Caratterizzazione della rete:** sparsa, a coda pesante con hub (non power law pura — coda con
-  cutoff), connessa in un'unica componente, distanze brevi, struttura nucleo-periferia.
+L'esito che misuro è il margine sul valore di mercato: prezzo di vendita meno la valutazione al momento della vendita. Avrei voluto usare "venduto meno comprato", ma il costo d'acquisto manca per circa due terzi del valore (acquisti troppo vecchi per essere nei dati), e metterlo a zero avrebbe inventato profitti dal nulla.
 
-## Struttura del repo
+Per la rete ho tenuto solo i club delle 7 leghe coperte, e ho costruito il grafo solo sugli archi tra questi club, così le centralità non vengono falsate da squadre di cui vedo mezza attività. La betweenness la calcolo senza pesi economici, se no sarebbe circolare (l'esito è già fatto di soldi). Ho usato il lag temporale per evitare che fosse il successo a spiegare la posizione invece del contrario, e gli errori standard clusterizzati perché lo stesso club torna in più stagioni.
 
-| File | Contenuto |
+Sulla struttura: la rete è sparsa, connessa in un pezzo solo, con distanze brevi e pochi hub molto collegati. Non è una power law pura, la coda cala troppo in fretta — l'ho controllato in log-log.
+
+## File
+
+| File | Cosa contiene |
 |---|---|
-| `transfers_pre_processing.ipynb` | Preprocessing (Python): dai dati grezzi alle viste pulite. |
-| `i-graph-transfers.R` | Analisi di rete (R/igraph): grafi stagionali, misure, modelli, grafici. |
-| `node_season_core.csv` | Tabella nodo-stagione: esito Y + attributi individuali. |
-| `edge_list_core.csv` | Edge list pesata e *season-aware* (archi core-to-core). |
-| `club_names.csv` | Mappa `club_id → nome`. |
-| `club_season_final.csv` | Tabella finale: attributi + misure di rete, per la corsa di cavalli. |
-| `mappa_ruoli.png`, `rete_20XX.png` | Figure principali del progetto. |
+| `transfers_pre_processing.ipynb` | Preprocessing in Python: dai dati grezzi alle tabelle pulite. |
+| `i-graph-transfers.R` | Analisi in R con igraph: grafi, misure, modelli, grafici. |
+| `node_season_core.csv` | Tabella club-stagione con esito e attributi. |
+| `edge_list_core.csv` | Lista degli archi per stagione. |
+| `club_names.csv` | Corrispondenza id → nome club. |
+| `club_season_final.csv` | Tabella finale con misure di rete, quella su cui giro i modelli. |
+| `mappa_ruoli.png`, `rete_20XX.png` | Le figure principali. |
 
-## Pipeline
-
-\`\`\`
-dati grezzi (d2ski) → preprocessing Python → viste pulite (CSV) → analisi R/igraph → modelli + figure
-\`\`\`
+Il codice R in alcuni punti è un po' grezzo: l'ho scritto in modo iterativo mentre capivo i dati.
